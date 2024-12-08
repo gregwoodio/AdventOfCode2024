@@ -25,6 +25,22 @@ class Position {
   int get hashCode => x.hashCode ^ y.hashCode;
 }
 
+class PositionWithFacing {
+  Position position;
+  Direction facing;
+
+  PositionWithFacing(this.position, this.facing);
+
+  @override
+  bool operator ==(other) =>
+      other is PositionWithFacing &&
+      position == other.position &&
+      facing == other.facing;
+
+  @override
+  int get hashCode => position.hashCode ^ facing.hashCode;
+}
+
 Future<void> main() async {
   final input = await File('./Day06/day06_input.txt').readAsLines();
   print('Part 1: ${part1(input)}');
@@ -75,6 +91,76 @@ int part1(List<String> input) {
   return visited.length;
 }
 
+// got 455, too low.
 int part2(List<String> input) {
-  return 0;
+  Direction facing = Direction.up;
+
+  int height = input.length;
+  int width = input[0].length;
+
+  late Position guardPos;
+  Set<Position> obstacles = {};
+
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      if (input[y][x] == '^') {
+        guardPos = Position(x, y);
+      } else if (input[y][x] == '#') {
+        obstacles.add(Position(x, y));
+      }
+    }
+  }
+
+  final initialGuardPos = guardPos;
+  Set<Position> possibleObstacles = {};
+
+// brute force check every possible position for a loop
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      final newObstacle = Position(x, y);
+      if (obstacles.contains(newObstacle)) {
+        continue;
+      }
+      if (initialGuardPos == newObstacle) {
+        continue;
+      }
+
+      Set<PositionWithFacing> visited = {};
+      visited.add(PositionWithFacing(guardPos, facing));
+      final iterationObstacles = {...obstacles, newObstacle};
+
+      while (true) {
+        Position nextPos =
+            Position(guardPos.x + facing.dx, guardPos.y + facing.dy);
+
+        if (iterationObstacles.contains(nextPos)) {
+          facing =
+              Direction.values[(facing.index + 1) % Direction.values.length];
+        } else {
+          guardPos = nextPos;
+        }
+
+        if (guardPos.x < 0 ||
+            guardPos.x >= width ||
+            guardPos.y < 0 ||
+            guardPos.y >= height) {
+          // out of bounds
+          break;
+        }
+
+        if (visited.contains(PositionWithFacing(guardPos, facing))) {
+          possibleObstacles.add(newObstacle);
+          break;
+        }
+
+        visited.add(PositionWithFacing(guardPos, facing));
+      }
+
+      // reset
+      guardPos = initialGuardPos;
+      facing = Direction.up;
+    }
+  }
+
+  return possibleObstacles.length;
 }
