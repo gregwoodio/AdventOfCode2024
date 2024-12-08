@@ -33,7 +33,7 @@ Future<void> main() async {
         '#.........',
         '......#...',
       ];
-      expect(part2(input), 0);
+      expect(part2(input), 6);
     });
   });
 }
