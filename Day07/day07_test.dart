@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 import 'day07.dart';
 
 Future<void> main() async {
-  group('day 06', () {
+  group('day 07', () {
     test('part one', () {
       final input = [
         '190: 10 19',
