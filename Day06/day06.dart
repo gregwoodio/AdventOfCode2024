@@ -93,7 +93,6 @@ int part1(List<String> input) {
 
 // got 455, too low.
 int part2(List<String> input) {
-  Set<PositionWithFacing> visited = {};
   Direction facing = Direction.up;
 
   int height = input.length;
@@ -112,69 +111,55 @@ int part2(List<String> input) {
     }
   }
 
-  visited.add(PositionWithFacing(guardPos, facing));
-
+  final initialGuardPos = guardPos;
   Set<Position> possibleObstacles = {};
 
-  while (true) {
-    Position nextPos = Position(guardPos.x + facing.dx, guardPos.y + facing.dy);
-
-    if (obstacles.contains(nextPos)) {
-      facing = Direction.values[(facing.index + 1) % Direction.values.length];
-    } else {
-      guardPos = nextPos;
-    }
-
-    if (guardPos.x < 0 ||
-        guardPos.x >= width ||
-        guardPos.y < 0 ||
-        guardPos.y >= height) {
-      break;
-    }
-
-    visited.add(PositionWithFacing(guardPos, facing));
-    final guardsRight =
-        Direction.values[(facing.index + 1) % Direction.values.length];
-
-    if (visited.contains(PositionWithFacing(guardPos, guardsRight))) {
-      // We can create a loop for the guard by checking if the guard has visited
-      // this position, but facing to their right. If so, we can add a possible
-      // obstacle in front of the guard, forcing them to turn right and end up
-      // on an old path.
-      possibleObstacles
-          .add(Position(guardPos.x + facing.dx, guardPos.y + facing.dy));
-    } else {
-      // scan down to the right of the guard. If we find a visited position
-      // in the same facing before an obstacle, add the space in front of the
-      // guard as a possible obstacle
-      var i = 1;
-      while (true) {
-        var nextPos = Position(
-            guardPos.x + guardsRight.dx * i, guardPos.y + guardsRight.dy * i);
-        if (nextPos.x < 0 ||
-            nextPos.x >= width ||
-            nextPos.y < 0 ||
-            nextPos.y >= height) {
-          break;
-        }
-
-        if (obstacles.contains(nextPos)) {
-          break;
-        }
-
-        if (visited.contains(PositionWithFacing(nextPos, guardsRight))) {
-          possibleObstacles
-              .add(Position(guardPos.x + facing.dx, guardPos.y + facing.dy));
-          break;
-        }
-
-        i++;
+// brute force check every possible position for a loop
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      final newObstacle = Position(x, y);
+      if (obstacles.contains(newObstacle)) {
+        continue;
       }
-    }
-  }
+      if (initialGuardPos == newObstacle) {
+        continue;
+      }
 
-  for (var obs in possibleObstacles) {
-    print('Possible obstacle: ${obs.x}, ${obs.y}');
+      Set<PositionWithFacing> visited = {};
+      visited.add(PositionWithFacing(guardPos, facing));
+      final iterationObstacles = {...obstacles, newObstacle};
+
+      while (true) {
+        Position nextPos =
+            Position(guardPos.x + facing.dx, guardPos.y + facing.dy);
+
+        if (iterationObstacles.contains(nextPos)) {
+          facing =
+              Direction.values[(facing.index + 1) % Direction.values.length];
+        } else {
+          guardPos = nextPos;
+        }
+
+        if (guardPos.x < 0 ||
+            guardPos.x >= width ||
+            guardPos.y < 0 ||
+            guardPos.y >= height) {
+          // out of bounds
+          break;
+        }
+
+        if (visited.contains(PositionWithFacing(guardPos, facing))) {
+          possibleObstacles.add(newObstacle);
+          break;
+        }
+
+        visited.add(PositionWithFacing(guardPos, facing));
+      }
+
+      // reset
+      guardPos = initialGuardPos;
+      facing = Direction.up;
+    }
   }
 
   return possibleObstacles.length;
