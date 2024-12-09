@@ -53,6 +53,11 @@ Future<void> main() async {
       ]);
     });
 
+    test('fragment', () {
+      expect(fragment(expand('12345')),
+          [0, 2, 2, 1, 1, 1, 2, 2, 2, null, null, null, null, null, null]);
+    });
+
     test('part one', () {
       final input = ['2333133121414131402'];
       expect(part1(input), 1928);

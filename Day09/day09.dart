@@ -7,7 +7,7 @@ Future<void> main() async {
 }
 
 int part1(List<String> input) {
-  return 0;
+  return checksum(fragment(expand(input[0])));
 }
 
 int part2(List<String> input) {
@@ -36,4 +36,48 @@ List<int?> expand(String input) {
   }
 
   return output;
+}
+
+List<int?> fragment(List<int?> input) {
+  /// last non-null spot
+  int last = input.length - 1;
+
+  /// first null spot
+  int first = 0;
+
+  void findLastAndFirst() {
+    for (; last >= 0; last--) {
+      if (input[last] != null) {
+        break;
+      }
+    }
+
+    for (; first < input.length; first++) {
+      if (input[first] == null) {
+        break;
+      }
+    }
+  }
+
+  findLastAndFirst();
+
+  while (first < last) {
+    input[first] = input[last];
+    input[last] = null;
+
+    findLastAndFirst();
+  }
+
+  return input;
+}
+
+int checksum(List<int?> input) {
+  int sum = 0;
+  for (var i = 0; i < input.length; i++) {
+    if (input[i] != null) {
+      sum += input[i]! * i;
+    }
+  }
+
+  return sum;
 }
