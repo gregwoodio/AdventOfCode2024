@@ -65,7 +65,7 @@ Future<void> main() async {
 
     test('part two', () {
       final input = ['2333133121414131402'];
-      expect(part2(input), 0);
+      expect(part2(input), 2858);
     });
   });
 }
