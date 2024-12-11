@@ -1,5 +1,17 @@
 import 'dart:io';
 
+class Block {
+  int? id;
+  int length;
+  bool isFile;
+
+  Block({
+    this.id,
+    required this.length,
+    required this.isFile,
+  });
+}
+
 Future<void> main() async {
   final input = await File('./Day09/day09_input.txt').readAsLines();
   print('Part 1: ${part1(input)}');
@@ -11,7 +23,7 @@ int part1(List<String> input) {
 }
 
 int part2(List<String> input) {
-  return checksum(defragment(expand(input[0])));
+  return checksum2(defragment(expand2(input[0])));
 }
 
 List<int?> expand(String input) {
@@ -33,6 +45,31 @@ List<int?> expand(String input) {
     if (isFile) {
       id++;
     }
+  }
+
+  return output;
+}
+
+List<Block> expand2(String input) {
+  List<Block> output = [];
+  int id = 0;
+  bool isFile = true;
+
+  for (var i = 0; i < input.length; i++) {
+    var value = int.parse(input[i]);
+
+    if (value > 0) {
+      output.add(Block(
+        id: isFile ? id : null,
+        length: value,
+        isFile: isFile,
+      ));
+    }
+
+    if (isFile) {
+      id++;
+    }
+    isFile = !isFile;
   }
 
   return output;
@@ -71,54 +108,49 @@ List<int?> fragment(List<int?> input) {
   return input;
 }
 
-List<int?> defragment(List<int?> input) {
-  /// last non-null spot, and the first spot ahead of it with a matching id
-  int last2 = input.length - 1;
-  int last1 = last2 - 1;
+List<Block> defragment(List<Block> input) {
+  /// last non-null block
+  int last = input.length - 1;
 
-  /// first null spot, and last spot behind it that is the end of a contiguous
-  /// stretch of null values.
-  int first1 = 0;
-  int first2 = 1;
+  /// first null spot
+  int first = 0;
 
   void findLast() {
-    for (; last2 >= 0; last2--) {
-      if (input[last2] != null) {
+    for (; last >= 0; last--) {
+      if (input[last].id != null) {
         break;
       }
     }
-
-    for (last1 = last2; last1 >= 0 && input[last1] == input[last2]; last1--) {}
   }
 
   void findFirst() {
-    for (; first1 < input.length; first1++) {
-      if (input[first1] == null) {
+    for (; first < input.length; first++) {
+      if (!input[first].isFile) {
         break;
       }
     }
-
-    for (first2 = first1;
-        first2 < input.length && input[first2] == null;
-        first2++) {}
   }
 
   findLast();
   findFirst();
 
-  while (last1 > 0) {
-    int fileLength = last2 - last1 + 1;
-    int spaceLength = first2 - first1;
+  while (last > 0) {
+    if (input[last].length <= input[first].length) {
+      // remove block from the end
+      var block = input.removeAt(last);
 
-    if (fileLength <= spaceLength) {
-      for (var i = 0; i < fileLength; i++) {
-        input[first1 + i] = input[last1 + i];
-        input[last1 + i] = null;
+      // insert block in the empty spot
+      input.insert(first, block);
+      if (input[first + 1].length > input[last].length) {
+        // split block
+        input[first + 1].length -= input[last].length;
+      } else {
+        // remove block
+        input.removeAt(first + 1);
+        last--;
       }
 
       findLast();
-      first1 = 0;
-      first2 = 1;
       findFirst();
     } else {
       findFirst();
@@ -133,6 +165,17 @@ int checksum(List<int?> input) {
   for (var i = 0; i < input.length; i++) {
     if (input[i] != null) {
       sum += input[i]! * i;
+    }
+  }
+
+  return sum;
+}
+
+int checksum2(List<Block> input) {
+  int sum = 0;
+  for (var i = 0; i < input.length; i++) {
+    if (input[i].id != null) {
+      sum += input[i].id! * i;
     }
   }
 
