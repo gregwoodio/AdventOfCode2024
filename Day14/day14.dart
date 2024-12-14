@@ -40,7 +40,7 @@ class Robot {
 Future<void> main() async {
   final input = await File('./Day14/day14_input.txt').readAsLines();
   print('Part 1: ${part1(input, 101, 103)}');
-  print('Part 2: ${part2(input)}');
+  print('Part 2: ${part2(input, 101, 103)}');
 }
 
 int part1(List<String> input, int width, int height) {
@@ -57,8 +57,29 @@ int part1(List<String> input, int width, int height) {
   return safetyIndex(robots, height, width);
 }
 
-int part2(List<String> input) {
-  return 0;
+int part2(List<String> input, int width, int height) {
+  final robots = parse(input, width, height);
+
+  int ticks = 0;
+
+  while (true) {
+    ticks++;
+
+    for (var robot in robots) {
+      robot.move();
+    }
+
+    writeBoard(robots, height, width, ticks);
+
+    if (ticks > 10000) {
+      print('Too many ticks');
+      break;
+    }
+
+    // Ctrl+F :)
+  }
+
+  return ticks;
 }
 
 List<Robot> parse(List<String> input, int width, int height) {
@@ -116,3 +137,34 @@ void printBoard(List<Robot> robots, int height, int width) {
     print(row.map((e) => e == 0 ? '.' : '$e').join());
   }
 }
+
+void writeBoard(List<Robot> robots, int height, int width, int ticks) {
+  final board = List.generate(height, (_) => List.filled(width, 0));
+
+  for (var robot in robots) {
+    board[robot.pos.y][robot.pos.x] += 1;
+  }
+
+  final file = File('Day14/day14_output.txt');
+  file.writeAsStringSync('\n************************************ $ticks\n',
+      mode: FileMode.append);
+
+  for (var row in board) {
+    file.writeAsStringSync('${row.map((e) => e == 0 ? '.' : '$e').join()}\n',
+        mode: FileMode.append);
+  }
+
+  file.writeAsStringSync('\n', mode: FileMode.append, flush: true);
+}
+
+// bool checkColumnFilled(List<Robot> robots, int column, int height) {
+//   List<bool> everyYFilled = List.filled(height, false);
+
+//   for (var robot in robots) {
+//     if (robot.pos.x == column) {
+//       everyYFilled[robot.pos.y] = true;
+//     }
+//   }
+
+//   return everyYFilled.every((element) => element);
+// }
