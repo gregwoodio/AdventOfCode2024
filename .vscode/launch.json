@@ -7,7 +7,8 @@
         {
             "name": "AdventOfCode2024",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "console":"externalTerminal"
         }
     ]
 }

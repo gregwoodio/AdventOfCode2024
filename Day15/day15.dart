@@ -17,6 +17,8 @@ enum Tile {
   wall('#'),
   empty('.'),
   box('O'),
+  leftBox('['),
+  rightBox(']'),
   robot('@');
 
   final String value;
@@ -62,11 +64,21 @@ int part1(List<String> input) {
 }
 
 int part2(List<String> input) {
-  return 0;
+  final (map, robot, directions) = parseInput(input, isPart2: true);
+
+  // print('Initial state');
+  // printMap(map);
+
+  execute2(map, robot, directions);
+  // printMap(map);
+
+  return gpsCoords(map);
 }
 
 (Map<Coord, Tile> map, Coord robot, List<Direction> directions) parseInput(
-    List<String> input) {
+  List<String> input, {
+  bool isPart2 = false,
+}) {
   final map = <Coord, Tile>{};
   Coord robot = Coord(-1, -1);
 
@@ -77,12 +89,23 @@ int part2(List<String> input) {
     }
 
     for (var x = 0; x < input[y].length; x++) {
-      final coord = Coord(x, y);
-      final tile = Tile.values.firstWhere((tile) => tile.value == input[y][x]);
+      final coord = Coord(x * (isPart2 ? 2 : 1), y);
+      var tile = Tile.values.firstWhere((tile) => tile.value == input[y][x]);
       if (tile == Tile.robot) {
         robot = coord;
+        map[coord] = Tile.robot;
+        if (isPart2) {
+          map[Coord(coord.x + 1, coord.y)] = Tile.empty;
+        }
+      } else if (tile == Tile.box && isPart2) {
+        map[coord] = Tile.leftBox;
+        map[Coord(coord.x + 1, coord.y)] = Tile.rightBox;
+      } else {
+        map[coord] = tile;
+        if (isPart2) {
+          map[Coord(coord.x + 1, coord.y)] = tile;
+        }
       }
-      map[coord] = tile;
     }
   }
 
@@ -134,11 +157,136 @@ void execute(Map<Coord, Tile> map, Coord robot, List<Direction> directions) {
   }
 }
 
+void execute2(Map<Coord, Tile> map, Coord robot, List<Direction> directions) {
+  for (var direction in directions) {
+    // print('\nMove ${direction.value}');
+
+    final next = Coord(robot.x + direction.dx, robot.y + direction.dy);
+    if (map[next] == Tile.wall) {
+      // can't move
+      // print('can\'t move');
+      continue;
+    } else if (map[next] == Tile.leftBox || map[next] == Tile.rightBox) {
+      if (direction == Direction.up || direction == Direction.down) {
+        if (canPushBoxUpOrDown(map, next, direction)) {
+          moveUpOrDown(map, robot, Tile.empty, direction);
+          robot = next;
+        }
+      } else {
+        if (canPushBoxLeftOrRight(map, next, direction)) {
+          // print('moving ${direction.value}');
+          moveLeftOrRight(map, robot, direction);
+          robot = next;
+        }
+      }
+    } else if (map[next] == Tile.empty) {
+      // move the robot
+      map[robot] = Tile.empty;
+      robot = next;
+      map[robot] = Tile.robot;
+    }
+
+    // printMap(map);
+  }
+}
+
+// Recursive function to push the box up or down. If the box
+// can't be pushed, return false. If the box is pushed into another box, check
+// if that box can be pushed. If all boxes are pushed, return true.
+// When the box is pushed into another box, check that both sides of that box
+// can be pushed. If both sides can be pushed, return true.
+bool canPushBoxUpOrDown(Map<Coord, Tile> map, Coord next, Direction direction) {
+  if (map[next] == Tile.wall) {
+    return false;
+  } else if (map[next] == Tile.leftBox) {
+    final nextInDirection = Coord(next.x + direction.dx, next.y + direction.dy);
+    final nextRightInDirection =
+        Coord(next.x + direction.dx + 1, next.y + direction.dy);
+    return canPushBoxUpOrDown(map, nextInDirection, direction) &&
+        canPushBoxUpOrDown(map, nextRightInDirection, direction);
+  } else if (map[next] == Tile.rightBox) {
+    final nextInDirection = Coord(next.x + direction.dx, next.y + direction.dy);
+    final nextLeftInDirection =
+        Coord(next.x + direction.dx - 1, next.y + direction.dy);
+    return canPushBoxUpOrDown(map, nextInDirection, direction) &&
+        canPushBoxUpOrDown(map, nextLeftInDirection, direction);
+  } else if (map[next] == Tile.empty) {
+    return true;
+  }
+
+  return false;
+}
+
+bool canPushBoxLeftOrRight(
+    Map<Coord, Tile> map, Coord box, Direction direction) {
+  final next = Coord(box.x + direction.dx, box.y + direction.dy);
+  if (map[next] == Tile.wall) {
+    return false;
+  } else if (map[next] == Tile.leftBox) {
+    return canPushBoxLeftOrRight(map, next, direction);
+  } else if (map[next] == Tile.rightBox) {
+    return canPushBoxLeftOrRight(map, next, direction);
+  } else if (map[next] == Tile.empty) {
+    return true;
+  }
+
+  return false;
+}
+
+void moveLeftOrRight(Map<Coord, Tile> map, Coord robot, Direction direction) {
+  var next = robot;
+  Tile prevTile = Tile.empty;
+  var currentTile = map[next]!;
+
+  while (currentTile != Tile.empty) {
+    map[next] = prevTile;
+    prevTile = currentTile;
+    next = Coord(next.x + direction.dx, next.y + direction.dy);
+    currentTile = map[next]!;
+  }
+
+  map[next] = prevTile;
+}
+
+void moveUpOrDown(
+    Map<Coord, Tile> map, Coord coord, Tile prevTile, Direction direction) {
+  // Move previous tile to current tile, save a reference to the current tile
+  var next = coord;
+  var currentTile = map[next]!;
+  map[next] = prevTile;
+  prevTile = currentTile;
+
+// Find the next tile to move
+  next = Coord(next.x + direction.dx, next.y + direction.dy);
+  final _maxX = maxX(map);
+  final _maxY = maxY(map);
+  if (next.x < 0 || next.y < 0 || next.x > _maxX || next.y > _maxY) {
+    // print('out of bounds: $next\n Direction: $direction');
+
+    // printMap(map);
+    return;
+  }
+
+  currentTile = map[next]!;
+
+  if (currentTile == Tile.leftBox) {
+    final rightSide = Coord(next.x + 1, next.y);
+    moveUpOrDown(map, rightSide, Tile.empty, direction);
+    moveUpOrDown(map, next, prevTile, direction);
+  } else if (currentTile == Tile.rightBox) {
+    final leftSide = Coord(next.x - 1, next.y);
+    moveUpOrDown(map, leftSide, Tile.empty, direction);
+    moveUpOrDown(map, next, prevTile, direction);
+  } else {
+    map[next] = prevTile;
+  }
+}
+
 int gpsCoords(Map<Coord, Tile> map) {
   int sum = 0;
 
   for (var tile in map.entries) {
-    if (tile.value == Tile.box) {
+    if (tile.value == Tile.box || tile.value == Tile.leftBox) {
       sum += tile.key.x + tile.key.y * 100;
     }
   }
@@ -147,11 +295,12 @@ int gpsCoords(Map<Coord, Tile> map) {
 }
 
 void printMap(Map<Coord, Tile> map) {
-  final maxX = map.keys.map((coord) => coord.x).reduce((a, b) => a > b ? a : b);
-  final maxY = map.keys.map((coord) => coord.y).reduce((a, b) => a > b ? a : b);
+  final _maxX = maxX(map);
+  final _maxY = maxY(map);
 
-  for (var y = 0; y <= maxY; y++) {
-    for (var x = 0; x <= maxX; x++) {
+  for (var y = 0; y <= _maxY; y++) {
+    stdout.write('$y\t');
+    for (var x = 0; x <= _maxX; x++) {
       final coord = Coord(x, y);
       final tile = map[coord];
       if (tile == null) {
@@ -162,4 +311,12 @@ void printMap(Map<Coord, Tile> map) {
     }
     stdout.writeln();
   }
+}
+
+int maxX(Map<Coord, Tile> map) {
+  return map.keys.map((coord) => coord.x).reduce((a, b) => a > b ? a : b);
+}
+
+int maxY(Map<Coord, Tile> map) {
+  return map.keys.map((coord) => coord.y).reduce((a, b) => a > b ? a : b);
 }
