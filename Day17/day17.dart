@@ -11,12 +11,33 @@ String part1(List<String> input) {
   return run(input);
 }
 
-String part2(List<String> input) {
-  return 'part 2';
+int part2(List<String> input) {
+  var program = input[4].substring(8).trim();
+
+  int aOverride = 0;
+  while (true) {
+    if (aOverride % 1000 == 0) {
+      print(aOverride);
+    }
+    var output = run(input, aOverrideValue: aOverride);
+    if (output == program) {
+      return aOverride;
+    }
+
+    aOverride++;
+  }
 }
 
-String run(List<String> input) {
+String run(
+  List<String> input, {
+  int? aOverrideValue,
+}) {
   int a = int.parse(input[0].split(': ')[1]);
+  if (a == aOverrideValue) {
+    return 'same a value, skipping';
+  }
+  a = aOverrideValue ?? a;
+
   int b = int.parse(input[1].split(': ')[1]);
   int c = int.parse(input[2].split(': ')[1]);
 

@@ -23,5 +23,25 @@ Future<void> main() async {
         expect(part1(input), expected);
       });
     });
+
+    [
+      [
+        [
+          'Register A: 2024',
+          'Register B: 0',
+          'Register C: 0',
+          '',
+          'Program: 0,3,5,4,3,0',
+        ],
+        117440,
+      ],
+    ].forEach((testCase) {
+      var input = testCase[0] as List<String>;
+      var expected = testCase[1] as int;
+
+      test('part two', () {
+        expect(part2(input), expected);
+      });
+    });
   });
 }
